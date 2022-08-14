@@ -1,5 +1,6 @@
 # from pyvirtualdisplay import Display
 from cgitb import reset
+from itertools import count
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 import time
@@ -9,7 +10,7 @@ from cred import username, password, url_id, country_code
 from selenium.webdriver.common.by import By
 
 
-def run_visa_scraper(url, no_appointment_text):
+def run_visa_scraper(url, no_appointment_text, last_result):
     def has_website_changed():
         '''Checks for changes in the site. Returns True if a change was found.'''
         # Getting the website to check
@@ -62,7 +63,7 @@ def run_visa_scraper(url, no_appointment_text):
         # Getting main text
         # print(driver.page_source)
         # with open('debugging/main_page', 'w') as f:
-        #    f.write(driver.page_source)
+        #     f.write(driver.page_source)
         main_page = driver.find_element(By.CLASS_NAME, 'for-layout')
         result = []
         for line in main_page.text.split('\n'):
@@ -88,29 +89,30 @@ def run_visa_scraper(url, no_appointment_text):
     # Initialize the chromediver (must be installed and in PATH)
     # Needed to implement the headless option
     driver = webdriver.Chrome(options=chrome_options)
-
-    while True:
+    count = 0
+    while count < 6:
         current_time = time.strftime('%a, %d %b %Y %H:%M:%S', time.localtime())
         print(f'Starting a new check at {current_time}.')
         result = has_website_changed()
-        if result:
+        if result and result != last_result:
             print('A change was found. Notifying it.')
             send_photo(driver.get_screenshot_as_png())
             send_message('\n'.join(result))
 
             # Closing the driver before quicking the script.
-            driver.close()
-            exit()
-        else:
+            # driver.close()
+            last_result = result
+
             # print(f'No change was found. Checking again in {seconds_between_checks} seconds.')
             # time.sleep(seconds_between_checks)
-            for seconds_remaining in range(int(seconds_between_checks), 0, -1):
-                sys.stdout.write('\r')
-                sys.stdout.write(
-                    f'No change was found. Checking again in {seconds_remaining} seconds.')
-                sys.stdout.flush()
-                time.sleep(1)
-            print('\n')
+        for seconds_remaining in range(int(seconds_between_checks), 0, -1):
+            sys.stdout.write('\r')
+            sys.stdout.write(
+                f'No change was found. Checking again in {seconds_remaining} seconds.')
+            sys.stdout.flush()
+            time.sleep(1)
+        print('\n')
+        count += 1
 
 
 def main():
@@ -125,7 +127,7 @@ def main():
 # text = 'FORCING SCREENSHOT'
 # text = 'There are no available appointments at the selected location.'
 
-    run_visa_scraper(url, text)
+    run_visa_scraper(url, text, [])
 
 
 if __name__ == "__main__":
