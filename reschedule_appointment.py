@@ -3,7 +3,7 @@ from selenium import webdriver
 import time
 import sys
 from telegram import send_message, send_photo
-from creds import username, password
+from cred import username, password
 from selenium_scraper import log_in
 
 
